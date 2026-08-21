@@ -40,7 +40,7 @@ data, fetch_time = get_commodity_data()
 silver_df = data["Silver"]
 
 # --- 3. DASHBOARD TABS ---
-tab1, tab2, tab3 = st.tabs(["Current Market (Live)", "Short-Term Tactical (365 Days)", "Long-Term Structural (2030-2040)"])
+tab_intro, tab1, tab2, tab3 = st.tabs(["Platform Overview", "Current Market (Live)", "Short-Term Tactical (365 Days)", "Long-Term Structural (2030-2040)"])
 
 # --- TAB 1: LIVE MARKET ---
 # --- TAB 1: LIVE MARKET ---
