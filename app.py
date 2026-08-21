@@ -126,6 +126,29 @@ with tab1:
         st.info(f"The current Gold-to-Silver ratio is **{gsr:.2f}:1**. Historically, a ratio above 80:1 suggests Silver is undervalued relative to Gold.")
         st.caption("Methodology: The GSR is computed dynamically by dividing the active COMEX Gold spot price by the COMEX Silver spot price.")
 
+# --- UPGRADE 5: Historical Chart & Data Table ---
+    st.markdown("---")
+    st.subheader("Historical Price Trend (24 Months)")
+    st.write("Interactive historical chart for Silver. Drag to zoom in on specific timeframes.")
+    
+    # Draw the interactive historical chart using Plotly
+    fig_hist = go.Figure()
+    fig_hist.add_trace(go.Scatter(x=silver_df.index, y=silver_df['Close'], mode='lines', name='Silver Spot', line=dict(color='#A8A9AD', width=2)))
+    fig_hist.update_layout(xaxis_title="Date", yaxis_title="Price ($/oz)", template="plotly_white", margin=dict(l=0, r=0, t=30, b=0))
+    st.plotly_chart(fig_hist, use_container_width=True)
+
+    # Create an expandable accordion for the raw data table
+    with st.expander("📊 View Raw Historical Data Table"):
+        # Format the dataframe to look clean for non-technical users
+        display_df = silver_df[['Close', 'Volume']].copy()
+        display_df.index = display_df.index.strftime('%Y-%m-%d')
+        display_df.columns = ['Closing Price ($)', 'Trading Volume']
+        
+        # Sort so the newest dates are at the top
+        display_df = display_df.sort_index(ascending=False)
+        
+        st.dataframe(display_df, use_container_width=True)
+
 # --- TAB 2: SHORT-TERM LST/MONTE CARLO CONE ---
 with tab2:
     st.markdown("""
