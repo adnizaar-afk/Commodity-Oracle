@@ -20,6 +20,7 @@ def get_commodity_data():
         "Silver": "SI=F",
         "Gold": "GC=F",
         "Copper": "HG=F"
+        "Zinc": "ZNC=F"
     }
     data = {}
     for name, ticker in tickers.items():
