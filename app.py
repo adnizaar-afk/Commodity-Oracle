@@ -39,7 +39,9 @@ tab1, tab2, tab3 = st.tabs(["Current Market (Live)", "Short-Term Tactical (365 D
 # --- TAB 1: LIVE MARKET ---
 with tab1:
     st.header("Live Exchange Pricing")
-    cols = st.columns(3)
+    
+    # THE FIX: Tell Streamlit to dynamically create as many columns as there are commodities
+    cols = st.columns(len(data)) 
     
     for i, (name, df) in enumerate(data.items()):
         current_price = float(df['Close'].iloc[-1])
@@ -90,6 +92,15 @@ with tab2:
     fig.update_layout(title="Silver Price Probability Cone", xaxis_title="Date", yaxis_title="Price ($/oz)", template="plotly_white")
     st.plotly_chart(fig, use_container_width=True)
 
+    # UPGRADE 1: Explicit Time-Horizon Targets
+    st.subheader("Statistical Price Targets")
+    st.write("Median projected targets based on simulated probability paths:")
+    target_cols = st.columns(4)
+    target_cols[0].metric("7-Day Target", f"${float(percentile_50[7]):.2f}")
+    target_cols[1].metric("30-Day Target", f"${float(percentile_50[30]):.2f}")
+    target_cols[2].metric("180-Day Target", f"${float(percentile_50[180]):.2f}")
+    target_cols[3].metric("365-Day Target", f"${float(percentile_50[-1]):.2f}")
+
 # --- TAB 3: SYSTEM DYNAMICS STRUCTURAL MODEL ---
 with tab3:
     st.header("System Dynamics: The 2040 Supply Deficit")
@@ -101,7 +112,7 @@ with tab3:
     # Synthetic long-term model generation
     years = np.arange(2024, 2041)
     base_supply = 34000 # tonnes
-    supply_curve = [base_supply * (1 + 0.005)**(y-2024) for y in years] # Minimal 0.5% growth
+    supply_curve = [base_supply * (1 + 0.005)**(y-2024) for y in years] 
     
     base_pv_demand = 6000
     base_industrial_demand = 18000
@@ -120,5 +131,21 @@ with tab3:
     fig2.add_trace(go.Scatter(x=years, y=supply_curve, mode='lines', fill='tonexty', fillcolor='rgba(255,0,0,0.2)', line=dict(width=0), name='Structural Deficit'))
     fig2.update_layout(title="Silver Supply vs. Demand Collision", xaxis_title="Year", yaxis_title="Tonnes", template="plotly_white")
     st.plotly_chart(fig2, use_container_width=True)
+
+    # UPGRADE 2: Structural Milestones Table
+    st.subheader("Projected Structural Deficit Milestones")
     
-    st.info("As the red shaded area (the deficit) grows, above-ground warehouse inventories will be depleted, mathematically forcing the price of physical metal upward to destroy demand.")
+    def get_milestone(target_year):
+        idx = np.where(years == target_year)[0][0]
+        return {
+            "Year": target_year,
+            "Supply (Tonnes)": f"{int(supply_curve[idx]):,}",
+            "Demand (Tonnes)": f"{int(demand_curve[idx]):,}",
+            "Physical Deficit (Tonnes)": f"{int(demand_curve[idx] - supply_curve[idx]):,}"
+        }
+
+    milestones = [get_milestone(2030), get_milestone(2035), get_milestone(2040)]
+    milestones_df = pd.DataFrame(milestones)
+    
+    # Render the table dynamically based on the slider state
+    st.table(milestones_df)
