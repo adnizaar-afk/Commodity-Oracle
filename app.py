@@ -106,8 +106,13 @@ with tab1:
     cols = st.columns(len(data)) 
     
     for i, (name, df) in enumerate(data.items()):
-        if df.empty:
-            cols[i].metric(label=f"{name} Futures Spot", value="N/A", delta="N/A")
+        # BULLETPROOF CHECK: Ensure we have at least 2 days of data to calculate a % change
+        if len(df) < 2:
+            # If we have exactly 1 day, show the price without the % change. If completely empty, show N/A.
+            if len(df) == 1:
+                cols[i].metric(label=f"{name} Futures Spot", value=f"${float(df['Close'].iloc[-1]):.2f}", delta="History Unavailable")
+            else:
+                cols[i].metric(label=f"{name} Futures Spot", value="N/A", delta="Data Feed Error")
             continue
             
         current_price = float(df['Close'].iloc[-1])
