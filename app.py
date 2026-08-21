@@ -112,7 +112,7 @@ with tab3:
     
     st.sidebar.header("Model Inputs")
     pv_growth = st.sidebar.slider("Annual Solar PV Demand Growth (%)", min_value=1.0, max_value=15.0, value=8.0, step=0.5)
-    st.sidebar.caption("Move to adjust to your growth projection") # <--- Add this line here
+    st.sidebar.caption("Select your own growth projection") # <--- Add this line here
     
     years = np.arange(2024, 2041)
     base_supply = 34000
