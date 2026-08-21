@@ -162,6 +162,29 @@ with tab3:
     milestones_df = pd.DataFrame(milestones)
     st.table(milestones_df)
 
+# --- 4. FOOTER & TERMS OF SERVICE ---
+st.markdown("---") # Adds a clean horizontal divider line
+
+with st.expander("⚖️ Terms of Service & Legal Disclaimer"):
+    st.markdown("""
+    **Last Updated: August 2026**
+    
+    **1. Acceptance of Terms**
+    By accessing and using this forecasting engine (the "Service"), you accept and agree to be bound by the terms of this agreement. 
+    
+    **2. Strictly No Financial or Investment Advice**
+    The Service, including all predictive models, probability cones, data visualizations, and text, is provided for educational, informational, and research purposes only. **Nothing contained on this Service constitutes financial, investment, legal, or tax advice.** The mathematical models and system dynamics projections are theoretical simulations and do not represent trading signals or recommendations to buy, sell, or hold any commodity, security, or financial instrument.
+    
+    **3. Assumption of Risk**
+    Trading and investing in commodities and futures markets carries a high degree of risk, and you may lose some or all of your initial capital. Past performance of any mathematical model or statistical projection is not indicative of future results. You agree that you are solely responsible for your own financial decisions.
+    
+    **4. Data Accuracy and Third-Party Sources**
+    The Service dynamically aggregates data from third-party exchanges. While we strive for accuracy, the Service is provided on an "AS IS" and "AS AVAILABLE" basis. We make no warranties regarding the accuracy, completeness, reliability, or timeliness of the pricing data or fundamental metrics provided.
+    
+    **5. Limitation of Liability**
+    Under no circumstances shall the creators, developers, or affiliates be liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use of the Service, including financial losses resulting from trading decisions made based on the data presented herein.
+    """)
+
 # --- UPGRADE 4: Zero-Cost Web Analytics ---
 # To activate: create a free account at goatcounter.com, get your site code, and replace 'YOUR_CODE' below.
 components.html(
