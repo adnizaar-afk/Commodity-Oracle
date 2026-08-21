@@ -183,7 +183,11 @@ with st.expander("⚖️ Terms of Service & Legal Disclaimer"):
     
     **5. Limitation of Liability**
     Under no circumstances shall the creators, developers, or affiliates be liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use of the Service, including financial losses resulting from trading decisions made based on the data presented herein.
-    """)
+    """
+
+    **6. Limitation of Liability**
+    The design, logic, layout, and predictive algorithmic structures of the Service are the property of Metals Dynamics. You may not scrape, reverse-engineer, or commercially redistribute the models or data without explicit permission.
+    )
 
 # --- UPGRADE 4: Zero-Cost Web Analytics ---
 # To activate: create a free account at goatcounter.com, get your site code, and replace 'YOUR_CODE' below.
