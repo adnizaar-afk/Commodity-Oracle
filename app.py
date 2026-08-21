@@ -172,7 +172,7 @@ with tab2:
     st.header("Short-Term Tactical: Walk-Forward Backtest & Forecast")
     st.markdown("""
     > **Methodology:** This engine executes an out-of-sample walk-forward validation. The model anchors 90 trading days in the past, estimating Geometric Brownian Motion (GBM) parameters using strictly prior historical data. 
-    > 
+    > The resulting probability cone delineates the 5th, 50th (median), and 95th percentile confidence intervals for price trajectories over the next 365 days, providing a quantitative framework for volatility expectation.
     > By overlaying the actual realized price against the simulated probability cone from that origin point, traders can empirically evaluate model calibration, volatility containment, and directional drift.
     """)
     
