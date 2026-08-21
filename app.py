@@ -43,6 +43,7 @@ silver_df = data["Silver"]
 tab1, tab2, tab3 = st.tabs(["Current Market (Live)", "Short-Term Tactical (365 Days)", "Long-Term Structural (2030-2040)"])
 
 # --- TAB 1: LIVE MARKET ---
+# --- TAB 1: LIVE MARKET ---
 with tab1:
     st.header("Live Exchange Pricing")
     st.caption("Data Source: Pricing data reflects active continuous futures contracts sourced directly from the Commodity Exchange (COMEX).")
@@ -54,9 +55,8 @@ with tab1:
             ⏱️ Next market data update in: <strong id="timer">--:--</strong>
         </div>
         <script>
-            // Get the exact time the Python script fetched the data
             var fetchTime = {fetch_time} * 1000; 
-            var expireTime = fetchTime + (3600 * 1000); // Add 1 hour (3600 seconds)
+            var expireTime = fetchTime + (3600 * 1000); 
 
             var x = setInterval(function() {{
                 var now = new Date().getTime();
@@ -68,7 +68,6 @@ with tab1:
                 }} else {{
                     var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                     var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                    // Add leading zero to seconds if needed
                     seconds = seconds < 10 ? "0" + seconds : seconds;
                     document.getElementById("timer").innerHTML = minutes + "m " + seconds + "s";
                 }}
@@ -78,15 +77,28 @@ with tab1:
         height=50
     )
     
-                    cols = st.columns(len(data)),
+    cols = st.columns(len(data)) 
+    
+    for i, (name, df) in enumerate(data.items()):
+        if df.empty:
+            cols[i].metric(label=f"{name} Futures Spot", value="N/A", delta="N/A")
+            continue
+            
+        current_price = float(df['Close'].iloc[-1])
+        prev_price = float(df['Close'].iloc[-2])
+        pct_change = ((current_price - prev_price) / prev_price) * 100
+        
+        cols[i].metric(label=f"{name} Futures Spot", 
                        value=f"${current_price:.2f}", 
                        delta=f"{pct_change:.2f}%")
         
+    st.subheader("Gold-to-Silver Ratio (GSR)")
     if not data["Gold"].empty and not data["Silver"].empty:
         current_gold = float(data["Gold"]['Close'].iloc[-1])
         current_silver = float(data["Silver"]['Close'].iloc[-1])
         gsr = current_gold / current_silver
         st.info(f"The current Gold-to-Silver ratio is **{gsr:.2f}:1**. Historically, a ratio above 80:1 suggests Silver is undervalued relative to Gold.")
+        st.caption("Methodology: The GSR is computed dynamically by dividing the active COMEX Gold spot price by the COMEX Silver spot price.")
 
 # --- TAB 2: SHORT-TERM LST/MONTE CARLO CONE ---
 with tab2:
