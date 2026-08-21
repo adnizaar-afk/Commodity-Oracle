@@ -78,7 +78,7 @@ with tab1:
         height=50
     )
     
-    cols = st.columns(len(data)),
+                    cols = st.columns(len(data)),
                        value=f"${current_price:.2f}", 
                        delta=f"{pct_change:.2f}%")
         
