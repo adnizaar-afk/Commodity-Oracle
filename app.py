@@ -23,8 +23,9 @@ def get_commodity_data():
     }
     data = {}
     for name, ticker in tickers.items():
-        # Fetch the last 2 years of data for the baseline
-        df = yf.download(ticker, period="2y", interval="1d", progress=False)
+        # Using yf.Ticker().history() prevents the Multi-Index formatting error
+        tkr = yf.Ticker(ticker)
+        df = tkr.history(period="2y", interval="1d")
         data[name] = df
     return data
 
