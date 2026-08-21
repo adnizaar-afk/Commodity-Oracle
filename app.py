@@ -14,6 +14,7 @@ st.warning("**LEGAL DISCLAIMER:** This dashboard is for informational and resear
 st.title("Silver & Base Metals Forecasting Engine")
 st.markdown("Live fundamental data, short-term statistical projections, and long-term 2040 structural supply models.")
 
+
 # --- 2. DATA INGESTION ENGINE ---
 @st.cache_data(ttl=3600) 
 def get_commodity_data():
@@ -21,17 +22,21 @@ def get_commodity_data():
         "Silver": "SI=F",
         "Gold": "GC=F",
         "Copper": "HG=F",
-        "Zinc": "ZNC=F" # <--- UPGRADE 1: Zinc Ticker Added
+        "Zinc": "ZNC=F"
     }
     data = {}
     for name, ticker in tickers.items():
-        # Using yf.Ticker().history() prevents data formatting errors
         tkr = yf.Ticker(ticker)
         df = tkr.history(period="2y", interval="1d")
         data[name] = df
-    return data
+    
+    # Record the exact UNIX timestamp when this data was fetched
+    fetch_timestamp = datetime.now().timestamp()
+    
+    return data, fetch_timestamp
 
-data = get_commodity_data()
+# Unpack both the data and the timestamp
+data, fetch_time = get_commodity_data()
 silver_df = data["Silver"]
 
 # --- 3. DASHBOARD TABS ---
@@ -42,25 +47,38 @@ with tab1:
     st.header("Live Exchange Pricing")
     st.caption("Data Source: Pricing data reflects active continuous futures contracts sourced directly from the Commodity Exchange (COMEX).")
     
-    # BUG FIX: Dynamically create columns based on the number of commodities
-    cols = st.columns(len(data)) 
+    # THE LIVE COUNTDOWN TIMER
+    components.html(
+        f"""
+        <div style="font-family: sans-serif; font-size: 14px; color: #666; background-color: #f0f2f6; padding: 10px; border-radius: 5px; display: inline-block;">
+            ⏱️ Next market data update in: <strong id="timer">--:--</strong>
+        </div>
+        <script>
+            // Get the exact time the Python script fetched the data
+            var fetchTime = {fetch_time} * 1000; 
+            var expireTime = fetchTime + (3600 * 1000); // Add 1 hour (3600 seconds)
+
+            var x = setInterval(function() {{
+                var now = new Date().getTime();
+                var distance = expireTime - now;
+
+                if (distance < 0) {{
+                    clearInterval(x);
+                    document.getElementById("timer").innerHTML = "Data ready for refresh (Reload page)";
+                }} else {{
+                    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    // Add leading zero to seconds if needed
+                    seconds = seconds < 10 ? "0" + seconds : seconds;
+                    document.getElementById("timer").innerHTML = minutes + "m " + seconds + "s";
+                }}
+            }}, 1000);
+        </script>
+        """,
+        height=50
+    )
     
-    # ... [Keep your existing for loop here] ...
-        
-    st.subheader("Gold-to-Silver Ratio (GSR)")
-    st.caption("Methodology: The GSR is computed dynamically by dividing the active COMEX Gold spot price by the COMEX Silver spot price.")
-    
-    for i, (name, df) in enumerate(data.items()):
-        # Precaution in case Yahoo Finance returns empty data on weekends/holidays
-        if df.empty:
-            cols[i].metric(label=f"{name} Futures Spot", value="N/A", delta="N/A")
-            continue
-            
-        current_price = float(df['Close'].iloc[-1])
-        prev_price = float(df['Close'].iloc[-2])
-        pct_change = ((current_price - prev_price) / prev_price) * 100
-        
-        cols[i].metric(label=f"{name} Futures Spot", 
+    cols = st.columns(len(data)),
                        value=f"${current_price:.2f}", 
                        delta=f"{pct_change:.2f}%")
         
