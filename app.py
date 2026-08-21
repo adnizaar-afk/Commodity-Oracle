@@ -129,18 +129,35 @@ with tab1:
 # --- UPGRADE 5: Historical Chart & Data Table ---
     st.markdown("---")
     st.subheader("Historical Price Trend (24 Months)")
-    st.write("Interactive historical chart for Silver. Drag to zoom in on specific timeframes.")
+    
+    # The Dropdown Menu
+    selected_metal = st.selectbox(
+        "Select a commodity to view its historical trend:", 
+        ["Silver", "Gold", "Copper", "Zinc"]
+    )
+    
+    # Grab the historical data for whichever metal the user selected
+    selected_df = data[selected_metal]
+    
+    # Map colors to make the chart look premium
+    line_colors = {
+        "Silver": "#8C92AC", 
+        "Gold": "#D4AF37", 
+        "Copper": "#B87333", 
+        "Zinc": "#708090"
+    }
     
     # Draw the interactive historical chart using Plotly
     fig_hist = go.Figure()
-    fig_hist.add_trace(go.Scatter(x=silver_df.index, y=silver_df['Close'], mode='lines', name='Silver Spot', line=dict(color='#A8A9AD', width=2)))
-    fig_hist.update_layout(xaxis_title="Date", yaxis_title="Price ($/oz)", template="plotly_white", margin=dict(l=0, r=0, t=30, b=0))
+    fig_hist.add_trace(go.Scatter(x=selected_df.index, y=selected_df['Close'], mode='lines', name=f'{selected_metal} Spot', line=dict(color=line_colors[selected_metal], width=2)))
+    
+    fig_hist.update_layout(xaxis_title="Date", yaxis_title="Closing Price ($)", template="plotly_white", margin=dict(l=0, r=0, t=30, b=0))
     st.plotly_chart(fig_hist, use_container_width=True)
 
     # Create an expandable accordion for the raw data table
-    with st.expander("📊 View Raw Historical Data Table"):
+    with st.expander(f"📊 View Raw Historical Data Table ({selected_metal})"):
         # Format the dataframe to look clean for non-technical users
-        display_df = silver_df[['Close', 'Volume']].copy()
+        display_df = selected_df[['Close', 'Volume']].copy()
         display_df.index = display_df.index.strftime('%Y-%m-%d')
         display_df.columns = ['Closing Price ($)', 'Trading Volume']
         
