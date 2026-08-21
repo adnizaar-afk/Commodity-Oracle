@@ -42,7 +42,33 @@ silver_df = data["Silver"]
 # --- 3. DASHBOARD TABS ---
 tab_intro, tab1, tab2, tab3 = st.tabs(["Platform Overview", "Current Market (Live)", "Short-Term Tactical (365 Days)", "Long-Term Structural (2030-2040)"])
 
-# --- TAB 1: LIVE MARKET ---
+# --- TAB INTRO: PLATFORM OVERVIEW ---
+with tab_intro:
+    st.header("The Macro Thesis: Bridging Paper and Physical Markets")
+    
+    st.markdown("""
+    Welcome to the Commodity Forecasting Engine. This platform is designed to cut through market noise by visualizing the collision between macroeconomic policy and physical supply chain realities. 
+    
+    ### Why This Platform Exists
+    For decades, global markets have treated commodities purely as financial instruments traded on a screen. However, the world is undergoing a massive structural shift. Driven by global electrification, the green energy transition, and shifting geopolitical alliances, the actual *physical* availability of metals is becoming the ultimate bottleneck. 
+    
+    We built this platform to expose the growing disconnect between "paper" futures contracts and the hard realities of mining, industrial consumption, and warehouse depletion. By tracking these forces, we can anticipate market breaking points before they become obvious to the general public.
+
+    ### The Forces Driving the Metals
+    These assets are not just static rocks; they are the foundational layer of modern civilization, constantly pushed and pulled by global events:
+    
+    *   **Copper & Zinc:** The industrial backbone. Their demand is tied directly to global economic expansion, infrastructure spending, and real estate development. When supply chains tighten or copper mines face geopolitical shutdowns, it ripples through the entire global economy.
+    *   **Gold:** The ultimate monetary anchor. It does not carry counterparty risk. Gold is driven by central bank accumulation, inflation expectations, and a loss of faith in fiat currencies. It acts as a barometer for geopolitical fear and financial instability.
+    *   **Silver (The Dual-Nature Metal):** Silver sits perfectly at the crossroads. It is a historical monetary metal that acts as a safe haven, but it is also the most electrically conductive element on earth. Today, it is an irreplaceable industrial component for solar panels, EVs, and advanced electronics.
+
+    ### The Gold-to-Silver Ratio (GSR)
+    The GSR is the oldest continuously tracked exchange rate in human history—it tells us how many ounces of silver it takes to buy one ounce of gold. 
+    
+    More importantly, the GSR acts as a psychological pendulum for the global economy. During times of severe financial panic, investors rush to Gold, sending the ratio very high. However, as inflation takes root and industrial supply chains scramble for physical materials, Silver historically launches into violent catch-up rallies, driving the ratio back down. Tracking the extremes of the GSR allows us to identify moments where silver is deeply undervalued relative to the broader monetary system.
+    """)
+    
+    st.info("👈 Navigate through the tabs above to view live market pricing, short-term statistical trajectories, and long-term supply deficit models.")
+    
 # --- TAB 1: LIVE MARKET ---
 with tab1:
     st.header("Live Exchange Pricing")
