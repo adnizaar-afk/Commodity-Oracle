@@ -167,93 +167,144 @@ with tab1:
         st.dataframe(display_df, use_container_width=True)
 
 
-# --- TAB 2: SHORT-TERM LST/MONTE CARLO CONE ---
+# --- TAB 2: SHORT-TERM TACTICAL / WALK-FORWARD BACKTEST ---
 with tab2:
-    st.header("365-Day Probability Cone (Monte Carlo Simulation)")
+    st.header("Short-Term Tactical: Walk-Forward Backtest & Forecast")
     st.markdown("""
-    > **Methodology:** This stochastic forecasting model employs a Monte Carlo simulation utilizing Geometric Brownian Motion (GBM). By extracting historical daily log returns, annualized volatility, and drift from the preceding 24 months of COMEX trading data, the engine computes hundreds of random walk permutations. 
-    >
-    > The resulting probability cone delineates the 5th, 50th (median), and 95th percentile confidence intervals for price trajectories over the next 365 days, providing a quantitative framework for volatility expectation.
+    > **Methodology:** This engine executes an out-of-sample walk-forward validation. The model anchors 90 trading days in the past, estimating Geometric Brownian Motion (GBM) parameters using strictly prior historical data. 
+    > 
+    > By overlaying the actual realized price against the simulated probability cone from that origin point, traders can empirically evaluate model calibration, volatility containment, and directional drift.
     """)
     
-    returns = silver_df['Close'].pct_change().dropna()
-    mu = returns.mean()
-    sigma = returns.std()
-    last_price = float(silver_df['Close'].iloc[-1])
-    last_date = silver_df.index[-1]
-    
-    days = 365
+    # Define backtest parameters
+    backtest_days = 90
+    forecast_days = 180
+    total_sim_days = backtest_days + forecast_days
     simulations = 100
     
-    # OPTIONAL JITTER FIX: Uncomment the line below to lock the random seed daily
-    # np.random.seed(datetime.today().toordinal())
-    
-    simulated_paths = np.zeros((days, simulations))
-    simulated_paths[0] = last_price
-    
-    for t in range(1, days):
-        random_shocks = np.random.normal(loc=mu, scale=sigma, size=simulations)
-        simulated_paths[t] = simulated_paths[t-1] * (1 + random_shocks)
-    
-    percentile_5 = np.percentile(simulated_paths, 5, axis=1)
-    percentile_50 = np.percentile(simulated_paths, 50, axis=1)
-    percentile_95 = np.percentile(simulated_paths, 95, axis=1)
-    
-    # Align the future dates starting precisely from the last recorded trading day
-    future_dates = [last_date + timedelta(days=i) for i in range(days)]
-    
-    # Extract the 90-day historical runway
-    hist_90 = silver_df.tail(90)
-    
-    fig = go.Figure()
-    
-    # Plot 1: The 90-Day Historical Runway (Empirical Anchor)
-    fig.add_trace(go.Scatter(
-        x=hist_90.index, 
-        y=hist_90['Close'], 
-        mode='lines', 
-        line=dict(color='#2A2A2A', width=2.5), 
-        name='Actual Price (Past 90 Days)'
-    ))
-    
-    # Plot 2: Upper Bound (95th Percentile) - Invisible line for shading
-    fig.add_trace(go.Scatter(x=future_dates, y=percentile_95, mode='lines', line=dict(width=0), showlegend=False))
-    
-    # Plot 3: Lower Bound (5th Percentile) + Shading the Cone
-    fig.add_trace(go.Scatter(
-        x=future_dates, 
-        y=percentile_5, 
-        mode='lines', 
-        fill='tonexty', 
-        fillcolor='rgba(0,176,246,0.2)', 
-        line=dict(width=0), 
-        name='90% Confidence Interval'
-    ))
-    
-    # Plot 4: The Projected Median Trajectory
-    fig.add_trace(go.Scatter(
-        x=future_dates, 
-        y=percentile_50, 
-        mode='lines', 
-        line=dict(color='blue', width=2, dash='dot'), 
-        name='Projected Median'
-    ))
-    
-    # UI Enhancement: Draw a vertical boundary line separating History vs. Future
-    fig.add_vline(x=last_date, line_width=1.5, line_dash="dash", line_color="gray", annotation_text="Today", annotation_position="top left")
-
-    fig.update_layout(title="Silver Price Probability Cone vs. Actual History", xaxis_title="Date", yaxis_title="Price ($/oz)", template="plotly_white")
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Explicit Time-Horizon Targets
-    st.subheader("Statistical Price Targets")
-    st.write("Median projected targets based on simulated probability paths:")
-    target_cols = st.columns(4)
-    target_cols[0].metric("7-Day Target", f"${float(percentile_50[7]):.2f}")
-    target_cols[1].metric("30-Day Target", f"${float(percentile_50[30]):.2f}")
-    target_cols[2].metric("180-Day Target", f"${float(percentile_50[180]):.2f}")
-    target_cols[3].metric("365-Day Target", f"${float(percentile_50[-1]):.2f}")
-
+    # Ensure sufficient historical depth
+    if len(silver_df) > backtest_days + 252:
+        # Split data at the anchor point (90 trading days ago)
+        train_df = silver_df.iloc[:-backtest_days]
+        realized_df = silver_df.iloc[-backtest_days:]
+        
+        # Calculate parameters exclusively on training data (no lookahead bias)
+        train_returns = train_df['Close'].pct_change().dropna()
+        mu = train_returns.mean()
+        sigma = train_returns.std()
+        
+        anchor_price = float(train_df['Close'].iloc[-1])
+        anchor_date = train_df.index[-1]
+        
+        # Run Monte Carlo paths from the anchor point
+        np.random.seed(42) # Locked seed for deterministic evaluation
+        simulated_paths = np.zeros((total_sim_days, simulations))
+        simulated_paths[0] = anchor_price
+        
+        for t in range(1, total_sim_days):
+            shocks = np.random.normal(loc=mu, scale=sigma, size=simulations)
+            simulated_paths[t] = simulated_paths[t-1] * (1 + shocks)
+            
+        percentile_5 = np.percentile(simulated_paths, 5, axis=1)
+        percentile_50 = np.percentile(simulated_paths, 50, axis=1)
+        percentile_95 = np.percentile(simulated_paths, 95, axis=1)
+        
+        # Construct chronological timeline
+        sim_dates = [anchor_date + timedelta(days=i) for i in range(total_sim_days)]
+        
+        # Calculate Empirical Accuracy Metrics over the backtest window
+        realized_prices = realized_df['Close'].values
+        eval_len = min(len(realized_prices), backtest_days)
+        
+        # Check containment inside the 5th-95th percentile envelope
+        inside_cone = (realized_prices[:eval_len] >= percentile_5[:eval_len]) & (realized_prices[:eval_len] <= percentile_95[:eval_len])
+        containment_rate = (np.sum(inside_cone) / eval_len) * 100
+        
+        # Current deviation from projected median
+        current_actual = float(realized_df['Close'].iloc[-1])
+        current_median_proj = float(percentile_50[eval_len - 1])
+        deviation_pct = ((current_actual - current_median_proj) / current_median_proj) * 100
+        
+        # --- PLOTTING ---
+        fig = go.Figure()
+        
+        # 1. 95th Percentile Upper Bound
+        fig.add_trace(go.Scatter(
+            x=sim_dates, 
+            y=percentile_95, 
+            mode='lines', 
+            line=dict(width=0), 
+            showlegend=False
+        ))
+        
+        # 2. 5th Percentile Lower Bound + Shading
+        fig.add_trace(go.Scatter(
+            x=sim_dates, 
+            y=percentile_5, 
+            mode='lines', 
+            fill='tonexty', 
+            fillcolor='rgba(0, 176, 246, 0.18)', 
+            line=dict(width=0), 
+            name='90% Confidence Interval'
+        ))
+        
+        # 3. Projected Median Path
+        fig.add_trace(go.Scatter(
+            x=sim_dates, 
+            y=percentile_50, 
+            mode='lines', 
+            line=dict(color='#0052FF', width=2, dash='dot'), 
+            name='Projected Median Trajectory'
+        ))
+        
+        # 4. Realized Historical Price (The Empirical Test)
+        fig.add_trace(go.Scatter(
+            x=realized_df.index, 
+            y=realized_df['Close'], 
+            mode='lines+markers', 
+            marker=dict(size=4),
+            line=dict(color='#111111', width=2.5), 
+            name='Realized Price (Actual)'
+        ))
+        
+        # Vertical boundary markers
+        today_date = silver_df.index[-1]
+        fig.add_vline(x=anchor_date, line_width=1, line_dash="dash", line_color="darkgray", annotation_text="Origin (-90d)", annotation_position="top left")
+        fig.add_vline(x=today_date, line_width=1.5, line_dash="solid", line_color="#FF4B4B", annotation_text="Today", annotation_position="top right")
+        
+        fig.update_layout(
+            title="Out-of-Sample Calibration: Realized Price vs. 90-Day Simulation Cone",
+            xaxis_title="Timeline",
+            yaxis_title="Silver Spot ($/oz)",
+            template="plotly_white",
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # --- QUANTITATIVE SCORECARD ---
+        st.subheader("Model Reliability Scorecard (Past 90 Days)")
+        metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+        
+        metric_col1.metric(
+            label="Confidence Envelope Containment",
+            value=f"{containment_rate:.1f}%",
+            delta="Nominal: 90.0%"
+        )
+        metric_col2.metric(
+            label="Realized vs. Median Drift",
+            value=f"${current_actual:.2f}",
+            delta=f"{deviation_pct:+.2f}% vs Model"
+        )
+        metric_col3.metric(
+            label="Backtest Horizon",
+            value="90 Trading Days"
+        )
+        metric_col4.metric(
+            label="Forward Horizon",
+            value="180 Days Ahead"
+        )
+    else:
+        st.warning("Insufficient historical data to run the 90-day walk-forward backtest.")
 
 # --- TAB 3: SYSTEM DYNAMICS STRUCTURAL MODEL ---
 with tab3:
