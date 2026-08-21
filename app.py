@@ -166,8 +166,10 @@ with tab1:
         
         st.dataframe(display_df, use_container_width=True)
 
+
 # --- TAB 2: SHORT-TERM LST/MONTE CARLO CONE ---
 with tab2:
+    st.header("365-Day Probability Cone (Monte Carlo Simulation)")
     st.markdown("""
     > **Methodology:** This stochastic forecasting model employs a Monte Carlo simulation utilizing Geometric Brownian Motion (GBM). By extracting historical daily log returns, annualized volatility, and drift from the preceding 24 months of COMEX trading data, the engine computes hundreds of random walk permutations. 
     >
@@ -178,9 +180,14 @@ with tab2:
     mu = returns.mean()
     sigma = returns.std()
     last_price = float(silver_df['Close'].iloc[-1])
+    last_date = silver_df.index[-1]
     
     days = 365
     simulations = 100
+    
+    # OPTIONAL JITTER FIX: Uncomment the line below to lock the random seed daily
+    # np.random.seed(datetime.today().toordinal())
+    
     simulated_paths = np.zeros((days, simulations))
     simulated_paths[0] = last_price
     
@@ -191,16 +198,54 @@ with tab2:
     percentile_5 = np.percentile(simulated_paths, 5, axis=1)
     percentile_50 = np.percentile(simulated_paths, 50, axis=1)
     percentile_95 = np.percentile(simulated_paths, 95, axis=1)
-    future_dates = [datetime.today() + timedelta(days=i) for i in range(days)]
+    
+    # Align the future dates starting precisely from the last recorded trading day
+    future_dates = [last_date + timedelta(days=i) for i in range(days)]
+    
+    # Extract the 90-day historical runway
+    hist_90 = silver_df.tail(90)
     
     fig = go.Figure()
+    
+    # Plot 1: The 90-Day Historical Runway (Empirical Anchor)
+    fig.add_trace(go.Scatter(
+        x=hist_90.index, 
+        y=hist_90['Close'], 
+        mode='lines', 
+        line=dict(color='#2A2A2A', width=2.5), 
+        name='Actual Price (Past 90 Days)'
+    ))
+    
+    # Plot 2: Upper Bound (95th Percentile) - Invisible line for shading
     fig.add_trace(go.Scatter(x=future_dates, y=percentile_95, mode='lines', line=dict(width=0), showlegend=False))
-    fig.add_trace(go.Scatter(x=future_dates, y=percentile_5, mode='lines', fill='tonexty', fillcolor='rgba(0,176,246,0.2)', line=dict(width=0), name='90% Confidence Interval'))
-    fig.add_trace(go.Scatter(x=future_dates, y=percentile_50, mode='lines', line=dict(color='blue', width=2), name='Median Trajectory'))
-    fig.update_layout(title="Silver Price Probability Cone", xaxis_title="Date", yaxis_title="Price ($/oz)", template="plotly_white")
+    
+    # Plot 3: Lower Bound (5th Percentile) + Shading the Cone
+    fig.add_trace(go.Scatter(
+        x=future_dates, 
+        y=percentile_5, 
+        mode='lines', 
+        fill='tonexty', 
+        fillcolor='rgba(0,176,246,0.2)', 
+        line=dict(width=0), 
+        name='90% Confidence Interval'
+    ))
+    
+    # Plot 4: The Projected Median Trajectory
+    fig.add_trace(go.Scatter(
+        x=future_dates, 
+        y=percentile_50, 
+        mode='lines', 
+        line=dict(color='blue', width=2, dash='dot'), 
+        name='Projected Median'
+    ))
+    
+    # UI Enhancement: Draw a vertical boundary line separating History vs. Future
+    fig.add_vline(x=last_date, line_width=1.5, line_dash="dash", line_color="gray", annotation_text="Today", annotation_position="top left")
+
+    fig.update_layout(title="Silver Price Probability Cone vs. Actual History", xaxis_title="Date", yaxis_title="Price ($/oz)", template="plotly_white")
     st.plotly_chart(fig, use_container_width=True)
 
-    # --- UPGRADE 2: Explicit Time-Horizon Targets ---
+    # Explicit Time-Horizon Targets
     st.subheader("Statistical Price Targets")
     st.write("Median projected targets based on simulated probability paths:")
     target_cols = st.columns(4)
@@ -208,6 +253,7 @@ with tab2:
     target_cols[1].metric("30-Day Target", f"${float(percentile_50[30]):.2f}")
     target_cols[2].metric("180-Day Target", f"${float(percentile_50[180]):.2f}")
     target_cols[3].metric("365-Day Target", f"${float(percentile_50[-1]):.2f}")
+
 
 # --- TAB 3: SYSTEM DYNAMICS STRUCTURAL MODEL ---
 with tab3:
